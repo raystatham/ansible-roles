@@ -1,0 +1,13 @@
+---
+authorised_users:
+  - name: dummyuser1
+    key: "{{ lookup('file', 'files/dummyuser1.pub') }}"
+    groups: sudo
+  - name: dummyuser2
+    key: "{{ lookup('file', 'files/dummyuser2.pub') }}"
+    groups: sudo
+
+white_listed_users:
+  - name: root
+  - name: vagrant
+  - name: ec2-user

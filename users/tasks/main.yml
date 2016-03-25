@@ -1,0 +1,62 @@
+---
+# Modify the /etc/sudoers file
+
+- name: Configure password less sudo for real users
+  template: src=roles/users/files/sudoers dest=/etc/sudoers
+  ignore_errors: yes
+
+# Create the new user on the remote node
+
+- name: Create new user and assign to groups
+  user: name={{ item.name }} shell=/bin/bash groups={{ item.groups }} append=yes
+  with_items: "{{ authorised_users }}"
+  ignore_errors: yes
+
+# Add the new user's public ssh key
+
+- name: Add ssh user keys
+  authorized_key: user={{ item.name }} key="{{ item.key }}"
+  with_items: "{{ authorised_users }}"
+  ignore_errors: yes
+
+# Create authorised list of users on the remote node
+
+- name: Write a list of permitted users to the permitted_users.txt file
+  shell: echo {{ item.name }} >> /root/permitted_users.txt
+  with_items: "{{ authorised_users }}"
+
+- name: Write a list of whitelisted users to the permitted_users.txt file
+  shell: echo {{ item.name }} >> /root/permitted_users.txt
+  with_items: "{{ white_listed_users }}"
+
+# Create a list of discovered users on the remote node
+
+- name: Create text list of actual users on the remote node
+  shell: awk -F':' '{if ($7 == "/bin/bash") { print $1 }}' /etc/passwd >> /root/discovered_users.txt
+
+# Move the delete_users.sh script to the remote node
+
+- name: Copy delete_users.sh script to nodes /root/ folder
+  copy: src=roles/users/files/delete_users.sh dest=/root/delete_users.sh mode=0700
+
+# Run the script
+
+- name: Run script to delete unspecified users
+  shell:  bash /root/delete_users.sh
+  register: my_results
+
+# Display the users which have been deleted
+
+- name: Display Script Results
+  debug: var=my_results
+
+# Clean up
+
+- name: Delete /root/permitted_users.txt
+  file: path=/root/permitted_users.txt state=absent
+
+- name: Delete /root/discovered_user_list.txt
+  file: path=/root/discovered_users.txt state=absent
+
+- name: Delete /root/delete_users.sh
+  file: path=/root/delete_users.sh state=absent
