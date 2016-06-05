@@ -11,3 +11,4 @@ white_listed_users:
   - name: root
   - name: vagrant
   - name: ec2-user
+  - name: ubuntu
